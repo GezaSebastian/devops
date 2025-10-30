@@ -1,1 +1,2 @@
 Linia nr 1: pierwsza wersja
+Linia nr 2: dodane na branch-a
