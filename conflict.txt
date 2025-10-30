@@ -1,1 +1,2 @@
 Linia nr 1: zmiana dokonana na mejnie
+Linia nr 2: dodane na branch-a
