@@ -1,0 +1,198 @@
+-- Utworzenie bazy
+CREATE DATABASE IF NOT EXISTS blog_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE blog_app;
+
+-- Tabela użytkowników
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  bio TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela kategorii
+CREATE TABLE categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  slug VARCHAR(120) NOT NULL UNIQUE
+);
+
+-- Tabela postów
+CREATE TABLE posts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  author_id INT NOT NULL,
+  category_id INT,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  content TEXT NOT NULL,
+  published TINYINT(1) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  comment_count INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+);
+
+-- Tabela tagów
+CREATE TABLE tags (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  slug VARCHAR(120) NOT NULL UNIQUE
+);
+
+-- Tabela łącząca post <-> tag (M:N)
+CREATE TABLE post_tags (
+  post_id INT NOT NULL,
+  tag_id INT NOT NULL,
+  PRIMARY KEY (post_id, tag_id),
+  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+-- Tabela komentarzy
+CREATE TABLE comments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  post_id INT NOT NULL,
+  author_name VARCHAR(150),
+  author_email VARCHAR(150),
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+);
+
+-- użytkownicy
+INSERT INTO users (username, email, password_hash, bio) VALUES
+('jan', 'jan@example.com', 'hash1', 'Programista'),
+('ania', 'ania@example.com', 'hash2', 'Bloggerka');
+
+-- kategorie
+INSERT INTO categories (name, slug) VALUES
+('Programowanie', 'programowanie'),
+('Lifestyle', 'lifestyle');
+
+-- tagi
+INSERT INTO tags (name, slug) VALUES
+('mysql','mysql'), ('nosql','nosql'), ('php','php'), ('devops','devops');
+
+-- posty
+INSERT INTO posts (author_id, category_id, title, slug, content, published) VALUES
+(1, 1, 'Wprowadzenie do MySQL', 'wprowadzenie-do-mysql', 'Treść o MySQL...', 1),
+(2, 2, 'Jak zacząć z blogiem', 'jak-zaczac-z-blogiem', 'Treść o blogowaniu...', 1);
+
+-- powiązania post-tags
+INSERT INTO post_tags (post_id, tag_id) VALUES
+(1, 1), (1, 3), (1, 4),
+(2, 2);
+
+-- komentarze
+INSERT INTO comments (post_id, author_name, author_email, content) VALUES
+(1, 'Krzysztof', 'k@example.com', 'Dobra treść!'),
+(1, 'Marta', 'm@example.com', 'Dzięki za artykuł.');
+
+-- Widok: najpopularniejsze artykuły (po liczbie komentarzy)
+CREATE VIEW popular_posts AS
+SELECT p.id, p.title, p.slug, u.username AS author, c.name AS category,
+       p.comment_count, p.created_at
+FROM posts p
+LEFT JOIN users u ON p.author_id = u.id
+LEFT JOIN categories c ON p.category_id = c.id
+ORDER BY p.comment_count DESC, p.created_at DESC;
+
+-- Trigger po wstawieniu komentarza zwiększa comment_count w posts
+DELIMITER $$
+CREATE TRIGGER trg_comments_after_insert
+AFTER INSERT ON comments
+FOR EACH ROW
+BEGIN
+  UPDATE posts SET comment_count = comment_count + 1 WHERE id = NEW.post_id;
+END$$
+DELIMITER ;
+
+-- Trigger po wstawieniu komentarza zwiększa comment_count w posts
+DELIMITER $$
+CREATE TRIGGER trg_comments_after_insert
+AFTER INSERT ON comments
+FOR EACH ROW
+BEGIN
+  UPDATE posts SET comment_count = comment_count + 1 WHERE id = NEW.post_id;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE add_post_with_tags(
+  IN p_author INT,
+  IN p_category INT,
+  IN p_title VARCHAR(255),
+  IN p_slug VARCHAR(255),
+  IN p_content TEXT,
+  IN p_published TINYINT,
+  IN p_tags TEXT -- np. 'mysql,php,devops'
+)
+BEGIN
+  DECLARE done INT DEFAULT 0;
+  DECLARE tag VARCHAR(255);
+  DECLARE cur_pos INT DEFAULT 1;
+  DECLARE comma_pos INT;
+  DECLARE tag_val VARCHAR(255);
+
+  START TRANSACTION;
+  INSERT INTO posts (author_id, category_id, title, slug, content, published)
+    VALUES (p_author, p_category, p_title, p_slug, p_content, p_published);
+
+  SET @last_post_id = LAST_INSERT_ID();
+
+  -- p_tags rozbijamy pętlą
+  label_loop: LOOP
+    SET comma_pos = INSTR(SUBSTRING(p_tags, cur_pos), ',');
+    IF comma_pos = 0 THEN
+      SET tag_val = TRIM(SUBSTRING(p_tags, cur_pos));
+      IF tag_val <> '' THEN
+        -- wstaw tag jeśli nie istnieje
+        INSERT INTO tags (name, slug)
+          SELECT tag_val, REPLACE(LOWER(tag_val),' ','-')
+          WHERE NOT EXISTS (SELECT 1 FROM tags WHERE name = tag_val);
+        -- pobierz id taga
+        INSERT IGNORE INTO post_tags (post_id, tag_id)
+          SELECT @last_post_id, id FROM tags WHERE name = tag_val;
+      END IF;
+      LEAVE label_loop;
+    ELSE
+      SET tag = TRIM(SUBSTRING(p_tags, cur_pos, comma_pos-1));
+      IF tag <> '' THEN
+        INSERT INTO tags (name, slug)
+          SELECT tag, REPLACE(LOWER(tag),' ','-')
+          WHERE NOT EXISTS (SELECT 1 FROM tags WHERE name = tag);
+        INSERT IGNORE INTO post_tags (post_id, tag_id)
+          SELECT @last_post_id, id FROM tags WHERE name = tag;
+      END IF;
+      SET cur_pos = cur_pos + comma_pos;
+    END IF;
+  END LOOP;
+
+  COMMIT;
+END$$
+DELIMITER ;
+
+-- Przykładowe zapytania testowe
+
+-- Najpopularniejsze artykuły (po liczbie komentarzy):
+
+SELECT p.title, p.slug, u.username, p.comment_count
+FROM posts p JOIN users u ON p.author_id = u.id
+ORDER BY p.comment_count DESC LIMIT 10;
+
+
+-- Najwięcej artykułów na autora:
+
+SELECT u.username, COUNT(p.id) AS articles_count
+FROM users u LEFT JOIN posts p ON p.author_id = u.id
+GROUP BY u.id ORDER BY articles_count DESC;
+
+
+-- Najpopularniejsze kategorie:
+
+SELECT c.name, COUNT(p.id) AS posts_count
+FROM categories c LEFT JOIN posts p ON p.category_id = c.id
+GROUP BY c.id ORDER BY posts_count DESC;
