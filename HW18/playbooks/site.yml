@@ -1,0 +1,10 @@
+---
+- name: Configure all hosts
+  hosts: all
+  become: true
+  roles:
+    - base
+    - web
+    - php
+    - database
+    - app

@@ -1,0 +1,12 @@
+---
+- name: Create web root dir
+  file:
+    path: "{{ web_root_dir }}/{{ website_name }}"
+    state: directory
+    mode: "0755"
+
+- name: Deploy PHP app index
+  template:
+    src: templates/index.php.j2
+    dest: "{{ web_root_dir }}/{{ website_name }}/index.php"
+    mode: "0644"

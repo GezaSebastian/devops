@@ -1,0 +1,6 @@
+---
+- name: Deploy only app
+  hosts: all
+  become: true
+  roles:
+    - app

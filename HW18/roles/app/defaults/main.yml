@@ -1,0 +1,5 @@
+---
+website_name: ansible_php_app
+website_title: "Ansible LAMP App"
+website_content: "Deployed by Ansible"
+web_root_dir: /var/www/html

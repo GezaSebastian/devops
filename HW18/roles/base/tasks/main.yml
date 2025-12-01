@@ -1,0 +1,14 @@
+---
+- name: Update apt cache (Debian)
+  apt:
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Ensure essential packages installed
+  package:
+    name:
+      - curl
+      - git
+      - unzip
+      - software-properties-common
+    state: present

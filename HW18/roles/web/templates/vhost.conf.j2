@@ -1,0 +1,12 @@
+<VirtualHost *:80>
+    ServerName {{ website_domain | default('localhost') }}
+    DocumentRoot {{ web_root_dir }}/{{ website_name }}
+
+    <Directory "{{ web_root_dir }}/{{ website_name }}">
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/{{ website_name }}_error.log
+    CustomLog ${APACHE_LOG_DIR}/{{ website_name }}_access.log combined
+</VirtualHost>
