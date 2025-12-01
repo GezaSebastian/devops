@@ -1,0 +1,13 @@
+- name: Basic assertions 
+  hosts: all 
+  become: true 
+  tasks: 
+    - name: Check Apache is installed 
+      assert: 
+        that: 
+          - "'apache2' in ansible_facts.packages or 'httpd' in ansible_facts.packages" 
+        fail_msg: "Apache is not installed" 
+    - name: Check web root exists 
+      assert: 
+        that: 
+          - "ansible_facts['paths'] is defined or (lookup('fileglob', web_root_dir ~ '/' ~ website_name) is not none)"
