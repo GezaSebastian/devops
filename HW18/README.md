@@ -1,6 +1,6 @@
 # Ansible LAMP – Praca Domowa
 
-Ten projekt zawiera kompletne rozwiązanie pracy domowej z lekcji dotyczącej Ansible oraz konfiguracji środowiska LAMP.
+Ten projekt zawiera rozwiązanie pracy domowej z lekcji nr 18 dotyczącej Ansible oraz konfiguracji środowiska LAMP.
 
 ## Struktura projektu
 - `ansible.cfg` – konfiguracja Ansible  
@@ -15,4 +15,4 @@ ansible-playbook playbooks/site.yml -l dev
 ```
 
 ## Autor
-Automatycznie wygenerowane przez ChatGPT.
+Sebastian Gęza
