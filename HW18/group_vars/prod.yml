@@ -1,10 +1,10 @@
 ---
-env: dev
-website_name: ansible_dev_app
-website_domain: dev.local
-db_name: app_db_dev
-db_user: app_dev_user
-db_password: dev_pass
-db_root_password: dev_root_pass
+env: prod
+website_name: ansible_prod_app
+website_domain: prod.local
+db_name: app_db_prod
+db_user: app_prod_user
+db_password: prod_pass
+db_root_password: prod_root_pass
 php_version: "7.4"
-website_content: "Dev environment - debug ON"
+website_content: "prod environment - debug ON"

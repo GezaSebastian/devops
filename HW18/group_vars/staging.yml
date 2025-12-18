@@ -1,10 +1,10 @@
 ---
-env: dev
-website_name: ansible_dev_app
-website_domain: dev.local
-db_name: app_db_dev
-db_user: app_dev_user
-db_password: dev_pass
-db_root_password: dev_root_pass
+env: staging
+website_name: ansible_staging_app
+website_domain: staging.local
+db_name: app_db_staging
+db_user: app_staging_user
+db_password: staging_pass
+db_root_password: staging_root_pass
 php_version: "7.4"
-website_content: "Dev environment - debug ON"
+website_content: "staging environment - debug ON"
